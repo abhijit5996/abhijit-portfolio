@@ -19,7 +19,10 @@ export default defineConfig({
     tailwindcss(),
     tsconfigPaths(),
     nitro({
-      preset: "cloudflare-module",
+      prerender: {
+        routes: ["/", "/admin"],
+        crawlLinks: true,
+      },
     }),
   ],
 });

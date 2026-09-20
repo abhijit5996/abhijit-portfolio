@@ -13,7 +13,7 @@ export const app = express();
 
 // Middleware
 app.use(cors({
-  origin: true, // Allow configured origins
+  origin: true,
   credentials: true,
 }));
 
@@ -53,13 +53,49 @@ const frontendPathOptions = [
 ];
 
 const foundFrontend = frontendPathOptions.find((p) => fs.existsSync(p));
+
 if (foundFrontend) {
   console.log(`[Express Server] Serving static frontend from: ${foundFrontend}`);
   app.use(express.static(foundFrontend));
+
   app.get("*", (req, res, next) => {
     if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
       return next();
     }
-    res.sendFile(path.join(foundFrontend, "index.html"));
+
+    const indexPath = path.join(foundFrontend, "index.html");
+    if (fs.existsSync(indexPath)) {
+      return res.sendFile(indexPath);
+    }
+
+    // Dynamic fallback HTML generator for Nitro assets if index.html isn't created yet
+    const assetsPath = path.join(foundFrontend, "assets");
+    let cssFile = "";
+    let jsFiles: string[] = [];
+
+    if (fs.existsSync(assetsPath)) {
+      const files = fs.readdirSync(assetsPath);
+      cssFile = files.find((f) => f.endsWith(".css")) || "";
+      jsFiles = files.filter((f) => f.endsWith(".js"));
+    }
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Abhijit Das — Developer Portfolio</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    ${cssFile ? `<link rel="stylesheet" href="/assets/${cssFile}" />` : ""}
+  </head>
+  <body class="bg-background text-foreground">
+    <div id="root"></div>
+    ${jsFiles.map((js) => `<script type="module" src="/assets/${js}"></script>`).join("\n    ")}
+  </body>
+</html>`;
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(html);
   });
 }
