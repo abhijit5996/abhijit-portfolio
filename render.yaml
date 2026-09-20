@@ -3,16 +3,11 @@ services:
   - type: web
     name: abhijit-portfolio-frontend
     env: static
-    region: singapore
     buildCommand: npm install && npm run build
     staticPublishPath: .output/public
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: abhijit-portfolio-api
-          property: url
-          postfix: /api
+        value: https://abhijit-portfolio-api.onrender.com/api
 
   # 2. Express.js Backend API Service
   - type: web
