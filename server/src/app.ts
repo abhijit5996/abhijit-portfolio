@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import path from "node:path";
+import fs from "node:fs";
 
 import authRoutes from "./routes/authRoutes.js";
 import projectsRoutes from "./routes/projectsRoutes.js";
@@ -43,3 +44,22 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/*", (req, res) => {
   res.status(404).json({ error: "API endpoint not found." });
 });
+
+// Serve frontend static files in production (Monolithic Single-Service Deployment)
+const frontendPathOptions = [
+  path.resolve(process.cwd(), "..", ".output", "public"),
+  path.resolve(process.cwd(), ".output", "public"),
+  path.resolve(process.cwd(), "..", "dist"),
+];
+
+const foundFrontend = frontendPathOptions.find((p) => fs.existsSync(p));
+if (foundFrontend) {
+  console.log(`[Express Server] Serving static frontend from: ${foundFrontend}`);
+  app.use(express.static(foundFrontend));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
+      return next();
+    }
+    res.sendFile(path.join(foundFrontend, "index.html"));
+  });
+}

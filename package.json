@@ -1,11 +1,12 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "abhijit-portfolio",
   "private": true,
   "sideEffects": false,
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "vite build && cd server && npm install && npm run build",
+    "start": "cd server && node dist/index.js",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
