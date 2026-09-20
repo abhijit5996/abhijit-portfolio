@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect x="2" y="2" width="60" height="60" rx="8" fill="#FAF9F6" stroke="#26282E" stroke-width="3" />
+  <circle cx="50" cy="14" r="4" fill="#2563EB" />
+  <text x="32" y="42" font-family="'JetBrains Mono', 'Courier New', monospace" font-weight="700" font-size="28" fill="#26282E" text-anchor="middle" letter-spacing="-1">AD</text>
+</svg>
