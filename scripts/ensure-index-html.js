@@ -27,6 +27,16 @@ if (fs.existsSync(assetsDir)) {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     ${cssFile ? `<link rel="stylesheet" href="/assets/${cssFile}" />` : ""}
+    <script>
+      window.$_TSR = window.$_TSR || {
+        buffer: [],
+        router: {
+          matches: [],
+          manifest: {},
+          dehydratedData: null
+        }
+      };
+    </script>
   </head>
   <body class="bg-background text-foreground">
     <div id="root"></div>
