@@ -71,12 +71,15 @@ if (foundFrontend) {
     // Dynamic fallback HTML generator for Nitro assets if index.html isn't created yet
     const assetsPath = path.join(foundFrontend, "assets");
     let cssFile = "";
-    let jsFiles: string[] = [];
+    let entryJs = "";
 
     if (fs.existsSync(assetsPath)) {
       const files = fs.readdirSync(assetsPath);
       cssFile = files.find((f) => f.endsWith(".css")) || "";
-      jsFiles = files.filter((f) => f.endsWith(".js"));
+      entryJs =
+        files.find((f) => (f.startsWith("index-") || f.startsWith("main-") || f.startsWith("entry-")) && f.endsWith(".js")) ||
+        files.find((f) => f.endsWith(".js")) ||
+        "";
     }
 
     const html = `<!DOCTYPE html>
@@ -91,7 +94,7 @@ if (foundFrontend) {
   </head>
   <body class="bg-background text-foreground">
     <div id="root"></div>
-    ${jsFiles.map((js) => `<script type="module" src="/assets/${js}"></script>`).join("\n    ")}
+    ${entryJs ? `<script type="module" src="/assets/${entryJs}"></script>` : ""}
   </body>
 </html>`;
 

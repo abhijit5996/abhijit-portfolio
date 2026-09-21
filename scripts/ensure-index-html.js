@@ -8,10 +8,15 @@ if (fs.existsSync(assetsDir)) {
   const files = fs.readdirSync(assetsDir);
   const cssFile = files.find((f) => f.endsWith(".css")) || "";
 
-  const jsScripts = files
-    .filter((f) => f.endsWith(".js"))
-    .map((f) => `    <script type="module" src="/assets/${f}"></script>`)
-    .join("\n");
+  // Only include the main client entry script (e.g. index-*.js).
+  // Including code-split route chunks like admin-*.js directly as script tags causes
+  // out-of-order execution and invariant errors before the router initializes.
+  const entryJs =
+    files.find((f) => (f.startsWith("index-") || f.startsWith("main-") || f.startsWith("entry-")) && f.endsWith(".js")) ||
+    files.find((f) => f.endsWith(".js")) ||
+    "";
+
+  const jsScripts = entryJs ? `    <script type="module" src="/assets/${entryJs}"></script>` : "";
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -32,3 +37,4 @@ ${jsScripts}
   fs.writeFileSync(path.join(publicDir, "index.html"), html, "utf-8");
   console.log("[Build] Successfully generated .output/public/index.html");
 }
+
