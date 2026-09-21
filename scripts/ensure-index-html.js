@@ -28,14 +28,25 @@ if (fs.existsSync(assetsDir)) {
     <link rel="icon" type="image/png" href="/favicon.png" />
     ${cssFile ? `<link rel="stylesheet" href="/assets/${cssFile}" />` : ""}
     <script>
-      window.$_TSR = window.$_TSR || {
+      window.$_TSR = window.$_TSR || new Proxy({
+        h: function() {},
+        init: function() {},
+        cleanups: [],
         buffer: [],
+        t: new Map(),
+        initialized: false,
         router: {
           matches: [],
           manifest: {},
-          dehydratedData: null
+          dehydratedData: null,
+          lastMatchId: ""
         }
-      };
+      }, {
+        get: function(target, prop) {
+          if (prop in target) return target[prop];
+          return function() {};
+        }
+      });
     </script>
   </head>
   <body class="bg-background text-foreground">
