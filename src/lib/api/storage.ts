@@ -1,6 +1,7 @@
 import { getAdminToken } from "./auth";
+import { getApiBaseUrl } from "./config";
 
-const API_BASE_URL = import.meta.env["VITE_API_URL"] || "http://localhost:5000/api";
+const API_BASE_URL = getApiBaseUrl();
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
