@@ -1,9 +1,7 @@
 import { sendContactEmailNotification } from "./email";
 import { trackEvent } from "./analytics";
 import { getAdminToken } from "./auth";
-import { getApiBaseUrl } from "./config";
-
-const API_BASE_URL = getApiBaseUrl();
+import { getApiUrl } from "./config";
 
 export type ContactSubmission = {
   name: string;
@@ -52,7 +50,7 @@ export async function submitContactForm(payload: ContactSubmission): Promise<{ s
   }
 
   try {
-    const res = await fetch(`${API_BASE_URL}/contact`, {
+    const res = await fetch(getApiUrl("/contact"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -92,7 +90,7 @@ export async function submitContactForm(payload: ContactSubmission): Promise<{ s
 /** Admin: Fetch all messages. */
 export async function getContactMessagesAdmin(): Promise<DbContactMessage[]> {
   const token = getAdminToken();
-  const res = await fetch(`${API_BASE_URL}/contact/admin`, {
+  const res = await fetch(getApiUrl("/contact/admin"), {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
@@ -106,7 +104,7 @@ export async function getContactMessagesAdmin(): Promise<DbContactMessage[]> {
 /** Admin: Update message status (read / archived). */
 export async function updateMessageStatusAdmin(id: string, status: "unread" | "read" | "archived"): Promise<void> {
   const token = getAdminToken();
-  const res = await fetch(`${API_BASE_URL}/contact/admin/${id}/status`, {
+  const res = await fetch(getApiUrl(`/contact/admin/${id}/status`), {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -121,7 +119,7 @@ export async function updateMessageStatusAdmin(id: string, status: "unread" | "r
 /** Admin: Delete message. */
 export async function deleteMessageAdmin(id: string): Promise<void> {
   const token = getAdminToken();
-  const res = await fetch(`${API_BASE_URL}/contact/admin/${id}`, {
+  const res = await fetch(getApiUrl(`/contact/admin/${id}`), {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });

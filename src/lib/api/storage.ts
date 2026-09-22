@@ -1,7 +1,5 @@
 import { getAdminToken } from "./auth";
-import { getApiBaseUrl } from "./config";
-
-const API_BASE_URL = getApiBaseUrl();
+import { getApiUrl } from "./config";
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
@@ -36,7 +34,7 @@ export async function uploadFileAdmin(
   formData.append("image", file);
 
   try {
-    const res = await fetch(`${API_BASE_URL}/projects/admin/upload-image`, {
+    const res = await fetch(getApiUrl("/projects/admin/upload-image"), {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: formData,

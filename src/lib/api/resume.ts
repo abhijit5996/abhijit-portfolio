@@ -1,8 +1,6 @@
 import { profile } from "@/data/profile";
 import { getAdminToken } from "./auth";
-import { getApiBaseUrl } from "./config";
-
-const API_BASE_URL = getApiBaseUrl();
+import { getApiUrl } from "./config";
 
 export type DbResumeDocument = {
   id: string;
@@ -17,7 +15,7 @@ export type DbResumeDocument = {
 /** Get the currently active public resume URL. Falls back to static resume path if API call fails. */
 export async function getActiveResumeUrl(): Promise<string> {
   try {
-    const res = await fetch(`${API_BASE_URL}/resume/active`);
+    const res = await fetch(getApiUrl("/resume/active"));
     if (!res.ok) return profile.resumeUrl;
     const data = await res.json();
     return data.resume_url || profile.resumeUrl;
@@ -29,7 +27,7 @@ export async function getActiveResumeUrl(): Promise<string> {
 /** Admin: Fetch all uploaded resumes. */
 export async function getAllResumesAdmin(): Promise<DbResumeDocument[]> {
   const token = getAdminToken();
-  const res = await fetch(`${API_BASE_URL}/resume/admin`, {
+  const res = await fetch(getApiUrl("/resume/admin"), {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
@@ -51,7 +49,7 @@ export async function uploadNewResumeAdmin(file: File, versionStr: string = "v1.
   formData.append("resume", file);
   formData.append("version", versionStr);
 
-  const res = await fetch(`${API_BASE_URL}/resume/admin/upload`, {
+  const res = await fetch(getApiUrl("/resume/admin/upload"), {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: formData,
@@ -65,7 +63,7 @@ export async function uploadNewResumeAdmin(file: File, versionStr: string = "v1.
 /** Admin: Set a specific existing resume document as active. */
 export async function setActiveResumeAdmin(id: string): Promise<void> {
   const token = getAdminToken();
-  const res = await fetch(`${API_BASE_URL}/resume/admin/${id}/active`, {
+  const res = await fetch(getApiUrl(`/resume/admin/${id}/active`), {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -76,7 +74,7 @@ export async function setActiveResumeAdmin(id: string): Promise<void> {
 /** Admin: Delete resume document. */
 export async function deleteResumeAdmin(id: string): Promise<void> {
   const token = getAdminToken();
-  const res = await fetch(`${API_BASE_URL}/resume/admin/${id}`, {
+  const res = await fetch(getApiUrl(`/resume/admin/${id}`), {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });

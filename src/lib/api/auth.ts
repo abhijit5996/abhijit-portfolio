@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-import { getApiBaseUrl } from "./config";
-
-const API_BASE_URL = getApiBaseUrl();
+import { getApiUrl } from "./config";
 
 export type AdminUser = {
   id: string;
@@ -21,7 +19,7 @@ export function getAdminToken(): string | null {
 
 export async function signInAdmin(email: string, pass: string): Promise<{ user: AdminUser | null; token: string | null; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    const res = await fetch(getApiUrl("/auth/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: email.trim(), password: pass }),
@@ -85,7 +83,7 @@ export function useAdminAuth() {
       };
     }
 
-    void fetch(`${API_BASE_URL}/auth/verify`, {
+    void fetch(getApiUrl("/auth/verify"), {
       headers: { Authorization: `Bearer ${currentToken}` },
     })
       .then((res) => {

@@ -1,7 +1,5 @@
 import { getAdminToken } from "./auth";
-import { getApiBaseUrl } from "./config";
-
-const API_BASE_URL = getApiBaseUrl();
+import { getApiUrl } from "./config";
 
 export type EventName =
   | "page_view"
@@ -32,7 +30,7 @@ export async function trackEvent(
     delete metadata.pagePath;
     delete metadata.projectId;
 
-    await fetch(`${API_BASE_URL}/analytics/event`, {
+    await fetch(getApiUrl("/analytics/event"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -53,7 +51,7 @@ export async function getAnalyticsAdmin(): Promise<{
   counts: Record<string, number>;
 }> {
   const token = getAdminToken();
-  const res = await fetch(`${API_BASE_URL}/analytics/admin`, {
+  const res = await fetch(getApiUrl("/analytics/admin"), {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
