@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import path from "node:path";
 import fs from "node:fs";
+import { pathToFileURL } from "node:url";
 
 import authRoutes from "./routes/authRoutes.js";
 import projectsRoutes from "./routes/projectsRoutes.js";
@@ -45,81 +46,84 @@ app.use("/api/*", (req, res) => {
   res.status(404).json({ error: "API endpoint not found." });
 });
 
-// Serve frontend static files in production (Monolithic Single-Service Deployment)
-const frontendPathOptions = [
+// Locate built frontend public assets & SSR module
+const frontendPublicPaths = [
   path.resolve(process.cwd(), "..", ".output", "public"),
   path.resolve(process.cwd(), ".output", "public"),
-  path.resolve(process.cwd(), "..", "dist"),
 ];
 
-const foundFrontend = frontendPathOptions.find((p) => fs.existsSync(p));
+const foundPublicDir = frontendPublicPaths.find((p) => fs.existsSync(p));
 
-if (foundFrontend) {
-  console.log(`[Express Server] Serving static frontend from: ${foundFrontend}`);
-  app.use(express.static(foundFrontend));
+const ssrModulePaths = [
+  path.resolve(process.cwd(), "..", ".output", "server", "_ssr", "ssr.mjs"),
+  path.resolve(process.cwd(), ".output", "server", "_ssr", "ssr.mjs"),
+];
 
-  app.get("*", (req, res, next) => {
-    if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
-      return next();
+let ssrHandler: { fetch: (req: Request) => Promise<Response> } | null = null;
+
+async function getSsrHandler() {
+  if (ssrHandler) return ssrHandler;
+  const foundSsrPath = ssrModulePaths.find((p) => fs.existsSync(p));
+  if (foundSsrPath) {
+    try {
+      const fileUrl = pathToFileURL(foundSsrPath).href;
+      const mod = await import(fileUrl);
+      ssrHandler = mod.default || mod;
+      console.log(`[Express Server] Loaded SSR handler from ${foundSsrPath}`);
+      return ssrHandler;
+    } catch (err) {
+      console.error("[Express Server] Failed to import SSR module:", err);
     }
+  }
+  return null;
+}
 
-    const indexPath = path.join(foundFrontend, "index.html");
-    if (fs.existsSync(indexPath)) {
-      return res.sendFile(indexPath);
-    }
+if (foundPublicDir) {
+  console.log(`[Express Server] Serving static frontend assets from: ${foundPublicDir}`);
+  app.use(express.static(foundPublicDir, { maxAge: "1d", index: false }));
+}
 
-    // Dynamic fallback HTML generator for Nitro assets if index.html isn't created yet
-    const assetsPath = path.join(foundFrontend, "assets");
-    let cssFile = "";
-    let entryJs = "";
+// Delegate all frontend page requests to TanStack Start SSR handler
+app.get("*", async (req, res, next) => {
+  if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
+    return next();
+  }
 
-    if (fs.existsSync(assetsPath)) {
-      const files = fs.readdirSync(assetsPath);
-      cssFile = files.find((f) => f.endsWith(".css")) || "";
-      entryJs =
-        files.find((f) => (f.startsWith("index-") || f.startsWith("main-") || f.startsWith("entry-")) && f.endsWith(".js")) ||
-        files.find((f) => f.endsWith(".js")) ||
-        "";
-    }
+  try {
+    const handler = await getSsrHandler();
+    if (handler) {
+      const protocol = req.protocol || "http";
+      const host = req.get("host") || "localhost";
+      const fullUrl = `${protocol}://${host}${req.originalUrl}`;
 
-    const html = `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Abhijit Das — Developer Portfolio</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    ${cssFile ? `<link rel="stylesheet" href="/assets/${cssFile}" />` : ""}
-    <script>
-      window.$_TSR = window.$_TSR || new Proxy({
-        h: function() {},
-        init: function() {},
-        cleanups: [],
-        buffer: [],
-        t: new Map(),
-        initialized: false,
-        router: {
-          matches: [],
-          manifest: {},
-          dehydratedData: null,
-          lastMatchId: ""
+      const headers = new Headers();
+      for (const [key, value] of Object.entries(req.headers)) {
+        if (value === undefined) continue;
+        if (Array.isArray(value)) {
+          for (const v of value) headers.append(key, v);
+        } else {
+          headers.set(key, String(value));
         }
-      }, {
-        get: function(target, prop) {
-          if (prop in target) return target[prop];
-          return function() {};
+      }
+
+      const webReq = new Request(fullUrl, {
+        method: req.method,
+        headers,
+      });
+
+      const webRes = await handler.fetch(webReq);
+      res.status(webRes.status);
+      webRes.headers.forEach((val, key) => {
+        if (key.toLowerCase() !== "transfer-encoding") {
+          res.setHeader(key, val);
         }
       });
-    </script>
-  </head>
-  <body class="bg-background text-foreground">
-    <div id="root"></div>
-    ${entryJs ? `<script type="module" src="/assets/${entryJs}"></script>` : ""}
-  </body>
-</html>`;
+      const htmlText = await webRes.text();
+      return res.send(htmlText);
+    }
+  } catch (error) {
+    console.error("[Express Server] SSR rendering error:", error);
+  }
 
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.send(html);
-  });
-}
+  return res.status(500).send("Server Error: Unable to render page.");
+});
